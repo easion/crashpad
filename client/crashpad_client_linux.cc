@@ -90,6 +90,7 @@ std::vector<std::string> BuildAppProcessArgs(
                               database,
                               metrics_dir,
                               url,
+                              std::string(), 
                               annotations,
                               arguments);
 
@@ -121,7 +122,7 @@ std::vector<std::string> BuildArgsToLaunchWithLinker(
   argv.push_back(handler_library);
 
   std::vector<std::string> handler_argv = BuildHandlerArgvStrings(
-      base::FilePath(), database, metrics_dir, url, annotations, arguments);
+      base::FilePath(), database, metrics_dir, url, std::string(),  annotations, arguments);
 
   if (socket != kInvalidFileHandle) {
     handler_argv.push_back(FormatArgumentInt("initial-client-fd", socket));

@@ -533,6 +533,7 @@ void MonitorSelf(const Options& options) {
                                            options.database,
                                            base::FilePath(),
                                            options.url,
+	options.http_proxy,
                                            options.annotations,
                                            extra_arguments)) {
     return;
@@ -580,6 +581,48 @@ class ScopedStoppable {
 void InitCrashpadLogging(const base::FilePath& log_file_path,
                          int min_log_level) {
   logging::LoggingSettings settings;
+
+#if BUILDFLAG(IS_ANDROID) || defined(__linux__)
+
+  // Current mini_chromium LoggingSettings does not support
+  // log_file_path or min_log_level.
+  (void)log_file_path;
+  (void)min_log_level;
+
+  settings.logging_dest =
+      logging::LOG_TO_SYSTEM_DEBUG_LOG |
+      logging::LOG_TO_STDERR;
+
+#else
+
+#if BUILDFLAG(IS_CHROMEOS)
+  settings.logging_dest = logging::LOG_TO_FILE;
+  settings.log_file_path =
+      base::FilePath(FILE_PATH_LITERAL("/var/log/chrome/chrome"));
+#elif BUILDFLAG(IS_WIN)
+  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+#else
+  settings.logging_dest =
+      logging::LOG_TO_SYSTEM_DEBUG_LOG |
+      logging::LOG_TO_STDERR;
+#endif
+
+  if (!log_file_path.empty()) {
+    settings.logging_dest |= logging::LOG_TO_FILE;
+    settings.log_file_path = log_file_path;
+  }
+
+  settings.min_log_level = min_log_level;
+
+#endif  // BUILDFLAG(IS_ANDROID)
+
+  logging::InitLogging(settings);
+}
+
+/*
+void InitCrashpadLogging(const base::FilePath& log_file_path,
+                         int min_log_level) {
+  logging::LoggingSettings settings;
 #if BUILDFLAG(IS_CHROMEOS)
   settings.logging_dest = logging::LOG_TO_FILE;
   settings.log_file_path =
@@ -597,6 +640,7 @@ void InitCrashpadLogging(const base::FilePath& log_file_path,
   settings.min_log_level = min_log_level;
   logging::InitLogging(settings);
 }
+*/
 
 }  // namespace
 
@@ -1233,11 +1277,13 @@ int HandlerMain(int argc,
       true,
       false,
 #endif  // BUILDFLAG(IS_LINUX)
-      user_stream_sources
-#if BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
-      ,options.wait_for_upload
+      user_stream_sources,
+#if BUILDFLAG(IS_ANDROID)
+      false,
+#elif BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
+      options.wait_for_upload,
 #endif
-      ,&options.crash_reporter
+      &options.crash_reporter
       ,&options.crash_envelope
       ,&options.report_id
   );
