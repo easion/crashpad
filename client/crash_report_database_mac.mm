@@ -13,7 +13,10 @@
 // limitations under the License.
 
 #include "client/crash_report_database.h"
+
+#if !BUILDFLAG(IS_IOS_TVOS)
 #include "util/posix/spawn_subprocess.h"
+#endif
 
 #import <Foundation/Foundation.h>
 #include <errno.h>
@@ -168,9 +171,10 @@ class CrashReportDatabaseMac : public CrashReportDatabase {
   OperationStatus RequestUpload(const UUID& uuid) override;
   int CleanDatabase(time_t lockfile_ttl) override;
   base::FilePath DatabasePath() override;
+#if !BUILDFLAG(IS_IOS_TVOS)
   void LaunchCrashReporter(const base::FilePath& crash_reporter,
                            const base::FilePath& crash_envelope) override;
-
+#endif
  private:
   // CrashReportDatabase:
   OperationStatus RecordUploadAttempt(UploadReport* report,
@@ -342,6 +346,7 @@ base::FilePath CrashReportDatabaseMac::DatabasePath() {
   return base_dir_;
 }
 
+#if !BUILDFLAG(IS_IOS_TVOS)
 void CrashReportDatabaseMac::LaunchCrashReporter(
     const base::FilePath& crash_reporter,
     const base::FilePath& crash_envelope) {
@@ -363,6 +368,7 @@ void CrashReportDatabaseMac::LaunchCrashReporter(
 
   SpawnSubprocess(argv, nullptr, 0, false, nullptr);
 }
+#endif
 
 Settings* CrashReportDatabaseMac::GetSettings() {
   INITIALIZATION_STATE_DCHECK_VALID(initialized_);

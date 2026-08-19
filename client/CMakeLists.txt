@@ -32,16 +32,55 @@ if(IOS)
     target_sources(crashpad_client PRIVATE
         crash_report_database_mac.mm
         crashpad_client_ios.cc
+
+        crash_handler_base_ios.cc
+        crash_handler_base_ios.h
+
         ios_handler/exception_processor.h
         ios_handler/exception_processor.mm
+
         ios_handler/in_process_handler.cc
         ios_handler/in_process_handler.h
+
         ios_handler/in_process_intermediate_dump_handler.cc
         ios_handler/in_process_intermediate_dump_handler.h
+
         ios_handler/prune_intermediate_dumps_and_crash_reports_thread.cc
         ios_handler/prune_intermediate_dumps_and_crash_reports_thread.h
+
         simulate_crash_ios.h
+
+
+        #
+        # handler:common
+        #
+        ../handler/crash_report_upload_rate_limit.cc
+        ../handler/crash_report_upload_rate_limit.h
+
+        ../handler/crash_report_upload_thread.cc
+        ../handler/crash_report_upload_thread.h
+
+        ../handler/minidump_to_upload_parameters.cc
+        ../handler/minidump_to_upload_parameters.h
+
+        ../handler/user_stream_data_source.cc
+        ../handler/user_stream_data_source.h
+
+        ../handler/mac/file_limit_annotation.cc
+        ../handler/mac/file_limit_annotation.h
     )
+
+    if(TVOS)
+        target_sources(crashpad_client PRIVATE
+            crash_handler_tvos.cc
+            crash_handler_tvos.h
+        )
+    else()
+        target_sources(crashpad_client PRIVATE
+            crash_handler_ios.cc
+            crash_handler_ios.h
+        )
+    endif()
 endif()
 
 if(LINUX OR ANDROID)

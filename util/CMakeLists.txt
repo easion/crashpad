@@ -136,43 +136,72 @@ if(NOT WIN32)
         posix/drop_privileges.cc
         posix/drop_privileges.h
         posix/process_info.h
-        posix/spawn_subprocess.cc
-        posix/spawn_subprocess.h
         posix/symbolic_constants_posix.cc
         posix/symbolic_constants_posix.h
     )
 endif()
 
-if(APPLE)
+
+#
+# spawn_subprocess is NOT available on iOS/tvOS.
+#
+if(LINUX OR ANDROID OR (APPLE AND NOT TVOS))
     target_sources(crashpad_util PRIVATE
+        posix/spawn_subprocess.cc
+        posix/spawn_subprocess.h
+    )
+endif()
+
+if(APPLE)
+
+    target_sources(crashpad_util PRIVATE
+        mac/sysctl.cc
+        mac/sysctl.h
+
         mac/xattr.cc
         mac/xattr.h
-        mach/composite_mach_message_server.cc
-        mach/composite_mach_message_server.h
-        mach/exc_client_variants.cc
-        mach/exc_client_variants.h
-        mach/exc_server_variants.cc
-        mach/exc_server_variants.h
-        mach/exception_behaviors.cc
-        mach/exception_behaviors.h
-        mach/exception_handler_protocol.cc
-        mach/exception_handler_protocol.h
-        mach/exception_ports.cc
-        mach/exception_ports.h
+
         mach/mach_extensions.cc
         mach/mach_extensions.h
-        mach/mach_message.cc
-        mach/mach_message.h
-        mach/mach_message_server.cc
-        mach/mach_message_server.h
-        mach/symbolic_constants_mach.cc
-        mach/symbolic_constants_mach.h
+
         misc/capture_context_mac.S
         misc/clock_mac.cc
         misc/paths_mac.cc
+
         net/http_transport_mac.mm
         synchronization/semaphore_mac.cc
     )
+
+    if(NOT TVOS)
+        target_sources(crashpad_util PRIVATE
+            mach/composite_mach_message_server.cc
+            mach/composite_mach_message_server.h
+
+            mach/exc_client_variants.cc
+            mach/exc_client_variants.h
+
+            mach/exc_server_variants.cc
+            mach/exc_server_variants.h
+
+            mach/exception_behaviors.cc
+            mach/exception_behaviors.h
+
+            mach/exception_handler_protocol.cc
+            mach/exception_handler_protocol.h
+
+            mach/exception_ports.cc
+            mach/exception_ports.h
+
+            mach/mach_message.cc
+            mach/mach_message.h
+
+            mach/mach_message_server.cc
+            mach/mach_message_server.h
+
+            mach/symbolic_constants_mach.cc
+            mach/symbolic_constants_mach.h
+        )
+    endif()
     if(NOT IOS)
         target_sources(crashpad_util PRIVATE
             mac/checked_mach_address_range.h
@@ -182,8 +211,7 @@ if(APPLE)
             mac/mac_util.h
             mac/service_management.cc
             mac/service_management.h
-            mac/sysctl.cc
-            mac/sysctl.h
+
             mach/bootstrap.cc
             mach/bootstrap.h
             mach/child_port_handshake.cc
@@ -411,7 +439,7 @@ if(WIN32)
 endif()
 
 # Copied from: https://github.com/qedsoftware/crashpad/blob/3583c50a6575857abcf140f6ea3b8d11390205b3/util/CMakeLists.txt#L196-L233
-if(APPLE)
+if(APPLE AND NOT TVOS)
     function(check_and_fallback_sdk_path SDK_NAME)
         if(NOT CMAKE_OSX_SYSROOT)
             message("Empty CMAKE_OSX_SYSROOT. Please specify SDKROOT=${SDK_NAME} in the environment.")
@@ -534,12 +562,34 @@ if(APPLE)
         set(CMAKE_ASM_FLAGS "${CFLAGS} ${archs_str}")
     endif()
 
+    get_property(archs TARGET crashpad_util PROPERTY OSX_ARCHITECTURES)
+    if(archs)
+        list(TRANSFORM archs PREPEND "-arch ")
+        list(JOIN archs " " archs_str)
+        set(CMAKE_ASM_FLAGS "${CFLAGS} ${archs_str}")
+    endif()
+
+    #
+    # Common Apple frameworks.
+    #
     target_link_libraries(crashpad_util PRIVATE
-        bsm
         "-framework CoreFoundation"
         "-framework Foundation"
-        "-framework IOKit"
     )
+
+    #
+    # macOS only.
+    #
+    if(NOT IOS)
+        target_link_libraries(crashpad_util PRIVATE
+            bsm
+            "-framework IOKit"
+        )
+    endif()
+
+    #
+    # iOS / tvOS.
+    #
     if(IOS)
         target_link_libraries(crashpad_util PRIVATE
             "-framework UIKit"
