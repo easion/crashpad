@@ -98,6 +98,16 @@ target_compile_definitions(crashpad_interface INTERFACE
     CRASHPAD_LSS_SOURCE_EMBEDDED
 )
 
+if(ANDROID)
+    find_library(ANDROID_LOG_LIB log)
+    find_library(ANDROID_DL_LIB dl)
+
+    target_link_libraries(crashpad_interface INTERFACE
+        ${ANDROID_LOG_LIB}
+        ${ANDROID_DL_LIB}
+    )
+endif()
+
 if(WIN32)
     target_compile_definitions(crashpad_interface INTERFACE
         NOMINMAX
