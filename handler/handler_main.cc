@@ -582,7 +582,7 @@ void InitCrashpadLogging(const base::FilePath& log_file_path,
                          int min_log_level) {
   logging::LoggingSettings settings;
 
-#if BUILDFLAG(IS_ANDROID) || defined(__linux__)
+#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_IOS) || defined(__linux__)
 
   // Current mini_chromium LoggingSettings does not support
   // log_file_path or min_log_level.
